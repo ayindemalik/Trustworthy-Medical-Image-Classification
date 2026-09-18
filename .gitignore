@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Project-specific ---
+# Dataset: downloaded by the medmnist package on first run, never committed
+data/
+# Trained weights: too large for git, reproducible from the training command
+models/
+*.pt
+*.pth
+
+# Local study notes, not part of the deliverable repo
+notes/
