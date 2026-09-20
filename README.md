@@ -24,7 +24,7 @@
 **Approach.** A ResNet-18, pretrained on ImageNet and fine-tuned on BloodMNIST (eight classes of peripheral blood cell), with three layers of trust added on top:
 
 1. **Calibration.** Does 90% confidence mean right 90% of the time? Measured with expected calibration error (ECE) and reliability diagrams. Corrected with temperature scaling, fitted on the validation split only.
-2. **Uncertainty.** MC dropout and a five-model deep ensemble, compared against the plain softmax. The uncertainty score drives **selective prediction**: the model keeps the cases it is sure about and refers the rest to an expert.
+2. **Uncertainty.** MC dropout on the classification head and a five-model deep ensemble, compared against the plain softmax. The uncertainty score drives **selective prediction**: the model keeps the cases it is sure about and refers the rest to an expert.
 3. **Explanation.** Grad-CAM heatmaps of the image regions behind each prediction, plus a sanity check that the heatmaps depend on the trained weights and are not just edge detection.
 
 All three are then re-measured on a **shifted test set**, with simulated staining, focus and noise changes, because a second microscope in a second lab is the realistic way these models fail.
@@ -49,13 +49,13 @@ Evaluated on the official BloodMNIST test split (3,421 images). **Pending.** Fil
 |--------|----------|-----|-----|------|------------|
 | Softmax (baseline) | _pending_ | _pending_ | _pending_ | _pending_ | none |
 | + Temperature scaling | _pending_ | _pending_ | _pending_ | _pending_ | one parameter |
-| MC dropout (30 passes) | _pending_ | _pending_ | _pending_ | _pending_ | 30× inference |
+| MC dropout (30 passes, head only) | _pending_ | _pending_ | _pending_ | _pending_ | last layer run 30× |
 | Deep ensemble (5 models) | _pending_ | _pending_ | _pending_ | _pending_ | 5× training and inference |
 
-### Under distribution shift
+### Under distribution shift (deep ensemble)
 
-| Shift | Severity | Accuracy | ECE | Mean uncertainty |
-|-------|----------|----------|-----|------------------|
+| Shift | Severity | Accuracy | ECE | Mean entropy |
+|-------|----------|----------|-----|--------------|
 | None | – | _pending_ | _pending_ | _pending_ |
 | Stain (hue / saturation) | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
 | Defocus blur | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
@@ -94,15 +94,25 @@ cd Trustworthy-Medical-Image-Classification
 # 2. Install (uv handles the virtual environment and the lockfile)
 uv sync
 
-# 3. Train (repeat with seeds 1-4 for the deep ensemble)
-uv run trustmed train --seed 0
+# 3. Look at the data: class counts, example cells, simulated shift
+uv run trustmed explore --size 224
 
-# 4. Evaluate: calibration, uncertainty, selective prediction, shift
-uv run trustmed evaluate
+# 4. Train (repeat with seeds 1-4 for the deep ensemble; a GPU is strongly recommended)
+uv run trustmed train --size 224 --seed 0
 
-# 5. Explain: Grad-CAM grids and the sanity check
-uv run trustmed explain
+# 5. Run every model on the clean and shifted test sets, and cache the outputs
+uv run trustmed predict --size 224
+
+# 6. Metrics, tables and charts, computed from the cached outputs in seconds
+uv run trustmed evaluate --size 224
+
+# 7. Grad-CAM grids and the sanity check
+uv run trustmed explain --size 224
 ```
+
+Add `--size 64 --limit 512` to any command for a quick test on a CPU. Output files from a quick test are named `*_limit512*` and never mix with real results.
+
+The results in this README are produced on a free Colab T4 GPU, running the same commands as `python -m trustmed ...`.
 
 ## Project structure
 
@@ -111,18 +121,23 @@ Trustworthy-Medical-Image-Classification/
 ├── src/trustmed/
 │   ├── cli.py            # command-line entry point
 │   ├── config.py         # every tunable value, in one place
-│   ├── data.py           # BloodMNIST loading, transforms, simulated shift
-│   ├── model.py          # ResNet-18 with a dropout head
+│   ├── data.py           # BloodMNIST loading, augmentation, simulated shift
+│   ├── explore.py        # class counts and example pictures
+│   ├── model.py          # ResNet-18 with a dropout head; saving, loading, running it
 │   ├── train.py          # training loop, early stopping, checkpoints
-│   ├── calibration.py    # ECE, reliability diagrams, temperature scaling
-│   ├── uncertainty.py    # MC dropout, deep ensemble, selective prediction
+│   ├── predict.py        # every model on every test condition, cached to outputs/
+│   ├── calibration.py    # ECE, NLL, Brier, temperature scaling
+│   ├── uncertainty.py    # entropy, risk–coverage, AURC, error-detection AUROC
+│   ├── evaluate.py       # metrics, tables and charts from the cached outputs
 │   ├── explain.py        # Grad-CAM and the weight-randomisation check
-│   └── app.py            # Gradio demo
-├── tests/                # pytest
-├── results/              # one JSON per evaluation run (committed)
+│   └── plots.py          # every chart, one shared style
+├── tests/                # pytest: the metrics on cases with known answers
+├── scripts/              # CPU vs GPU speed test
+├── results/              # metrics JSON and markdown tables (committed)
 ├── figures/              # reliability diagrams, risk–coverage curves, Grad-CAM grids
 ├── data/                 # git-ignored; downloaded on first run
 ├── models/               # git-ignored checkpoints
+├── outputs/              # git-ignored cached predictions
 ├── pyproject.toml
 └── README.md
 ```
@@ -155,7 +170,7 @@ flowchart LR
 Three details do most of the work.
 
 - **Temperature scaling changes confidence, never the answer.** It divides every logit by one learned number, T. The ranking of classes is unchanged, so accuracy stays the same and only the confidence moves. T is fitted on the validation split. Fitting it on the test split would make the calibration result circular.
-- **Deep ensembles are the strong baseline, MC dropout is the cheap one.** Five independently trained networks tend to disagree exactly where the data is ambiguous, and they have held up best under distribution shift in published comparisons (Ovadia et al., 2019). They cost five times the training. MC dropout costs nothing extra to train, but it needs many forward passes at prediction time. The comparison table is there to show whether the cheaper method is good enough.
+- **Deep ensembles are the strong baseline, MC dropout is the cheap one.** Five independently trained networks tend to disagree exactly where the data is ambiguous, and they have held up best under distribution shift in published comparisons (Ovadia et al., 2019). They cost five times the training. MC dropout costs nothing extra to train, and because the dropout sits only before the last layer, its 30 prediction passes re-run that one layer and nothing else. The comparison table is there to show whether the cheaper method is good enough.
 - **A heatmap is only evidence if it depends on the model.** Some saliency methods produce nearly the same map from a randomly initialised network (Adebayo et al., 2018), which means they show image edges, not the model's reasoning. Grad-CAM is re-run after the trained weights are randomised, and the similarity between the two maps is reported. A trustworthy explanation should change.
 
 ## Roadmap
@@ -172,6 +187,7 @@ Three details do most of the work.
 - **One hospital, one analyser.** Simulated staining and blur are a stand-in for lab-to-lab variation, not a replacement for it.
 - **Low resolution.** The images are downsampled from 360 px. Fine nuclear detail is lost, and Grad-CAM maps are coarse at the resolutions a CPU can train on.
 - **Grad-CAM shows where, not why.** A heatmap on the nucleus says the model used the nucleus. It does not say what about the nucleus it used.
+- **The ensemble members share a starting point.** All five start from the same ImageNet weights and differ only in the new head, the data order and the augmentation, so they are less diverse than networks trained from scratch.
 - **Research code, not a medical device.** It is not validated for clinical use.
 
 ## Data citation

@@ -227,3 +227,8 @@ models/
 
 # Local study notes, not part of the deliverable repo
 notes/
+
+# Saved predictions: large, and rebuilt by `trustmed predict`
+outputs/
+# Quick-test files made with --limit
+*_limit*
