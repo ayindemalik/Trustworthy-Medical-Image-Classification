@@ -71,3 +71,66 @@ def shift_examples(clean, shifted, filename):
                 ax.set_title("clean" if c == 0 else f"severity {c}", fontsize=9)
         axes[r, 0].set_ylabel(kind)
     _save(fig, filename)
+
+## Added at stage 5.1
+
+def reliability(panels, filename):
+    """One panel per method. Bars: accuracy per confidence group. Dashed line: perfectly honest confidence.
+
+    `panels` maps a method name to (accuracy of each confidence group, ECE).
+    """
+    fig, axes = plt.subplots(1, len(panels), figsize=(3.3 * len(panels), 3.6), sharey=True)
+    centers = (np.arange(config.ECE_BINS) + 0.5) / config.ECE_BINS
+    for ax, (name, (accuracy, ece)) in zip(axes, panels.items()):
+        ax.bar(centers, np.nan_to_num(accuracy), width=0.9 / config.ECE_BINS, color=METHOD_COLORS[name])
+        ax.plot([0, 1], [0, 1], "--", color=MUTED, linewidth=1.2)
+        ax.set_title(f"{name}\nECE {ece:.3f}")
+        ax.set_xlabel("Confidence")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+    axes[0].set_ylabel("Accuracy")
+    _save(fig, filename)
+
+
+def risk_coverage(curves, filename):
+    """Error rate on the cases the model keeps, as it refers more of them to an expert.
+
+    `curves` maps a method name to (coverage, risk), as returned by uncertainty.risk_coverage.
+    """
+    fig, ax = plt.subplots(figsize=(6.4, 4))
+    for name, (coverage, risk) in curves.items():
+        shown = coverage >= 0.5   # the region that matters: referring up to half the cases
+        ax.plot(coverage[shown], risk[shown] * 100, color=METHOD_COLORS[name], label=name)
+    ax.axvline(config.COVERAGE, color=MUTED, linestyle="--", linewidth=1)
+    ax.set_xlim(0.5, 1)
+    ax.set_ylim(bottom=0)
+    ax.set_xlabel("Coverage: share of cases the model keeps")
+    ax.set_ylabel("Error rate on kept cases (%)")
+    ax.legend(loc="upper left")
+    _save(fig, filename)
+
+
+def shift(results, filename):
+    """Accuracy and ECE as each kind of shift gets stronger. Severity 0 is the clean test set."""
+    methods = list(results["conditions"]["clean"])
+    severities = [0] + config.SEVERITIES
+    fig, axes = plt.subplots(2, len(config.SHIFTS), figsize=(3.8 * len(config.SHIFTS), 6),
+                             sharex=True, sharey="row", squeeze=False)
+    for col, kind in enumerate(config.SHIFTS):
+        names = ["clean"] + [f"{kind}{s}" for s in config.SEVERITIES]
+        for row, (metric, label, scale) in enumerate([("accuracy", "Accuracy (%)", 100), ("ece", "ECE", 1)]):
+            ax = axes[row, col]
+            for method in methods:
+                values = [results["conditions"][n][method][metric] * scale for n in names]
+                ax.plot(severities, values, marker="o", color=METHOD_COLORS[method], label=method)
+            ax.set_xticks(severities)
+            if row == 0:
+                ax.set_title(kind.capitalize())
+            else:
+                ax.set_xlabel("Severity (0 = clean)")
+            if col == 0:
+                ax.set_ylabel(label)
+    handles, names = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, names, loc="upper center", ncol=len(methods), bbox_to_anchor=(0.5, 1.03))
+    fig.tight_layout()
+    _save(fig, filename)
