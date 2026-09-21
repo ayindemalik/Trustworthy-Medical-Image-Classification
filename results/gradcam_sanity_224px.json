@@ -1,0 +1,9 @@
+{
+  "tag": "224px",
+  "seed": 0,
+  "images_checked": 200,
+  "images_compared": 199,
+  "spearman_mean": -0.1674887041336894,
+  "spearman_std": 0.2976223908921927,
+  "meaning": "Rank correlation between Grad-CAM maps of the trained and the randomly initialised network. Near 0 means the maps depend on what the model learned; near 1 means they do not."
+}

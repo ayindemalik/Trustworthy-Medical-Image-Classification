@@ -33,7 +33,14 @@ All three are then re-measured on a **shifted test set**, with simulated stainin
 
 ## Results
 
-Evaluated on the official BloodMNIST test split (3,421 images). **Pending.** Filled from `results/` as each step lands.
+Evaluated on the official BloodMNIST test split (3,421 images).  Filled from `results/` as each step lands.
+
+# Results: 224px
+
+3421 test images, 5 trained model(s). Temperature fitted on the validation split: T = 1.134.
+
+Trained on a Colab T4 GPU at 224 px. Temperature T = 1.134. Grad-CAM sanity check: Spearman = 0.2976 (trained vs random weights, 3421 test images).
+
 
 | Metric | Value | Notes |
 |--------|-------|-------|
@@ -42,6 +49,15 @@ Evaluated on the official BloodMNIST test split (3,421 images). **Pending.** Fil
 | ECE (before → after temperature scaling) | _pending_ | 15 equal-width bins; lower is better |
 | Accuracy at 90% coverage | _pending_ | Most uncertain 10% referred to an expert |
 | AURC | _pending_ | Area under the risk–coverage curve; lower is better |
+
+## Methods on the clean test set
+
+| Method | Accuracy | Macro-F1 | ECE | NLL | Brier | AURC | Accuracy at 90% coverage | Error AUROC |
+|---|---|---|---|---|---|---|---|---|
+| Softmax | 0.9927 | 0.9940 | 0.0047 | 0.0331 | 0.0127 | 0.0013 | 0.9990 | 0.9165 |
+| Temperature scaling | 0.9927 | 0.9940 | 0.0032 | 0.0313 | 0.0127 | 0.0013 | 0.9990 | 0.9167 |
+| MC dropout | 0.9927 | 0.9940 | 0.0037 | 0.0325 | 0.0126 | 0.0013 | 0.9990 | 0.9165 |
+| Deep ensemble | 0.9936 | 0.9948 | 0.0034 | 0.0312 | 0.0121 | 0.0013 | 0.9987 | 0.8985 |
 
 ### Uncertainty methods compared
 
@@ -52,6 +68,27 @@ Evaluated on the official BloodMNIST test split (3,421 images). **Pending.** Fil
 | MC dropout (30 passes, head only) | _pending_ | _pending_ | _pending_ | _pending_ | last layer run 30× |
 | Deep ensemble (5 models) | _pending_ | _pending_ | _pending_ | _pending_ | 5× training and inference |
 
+# Under shift: Accuracy
+
+| Condition | Softmax | Temperature scaling | MC dropout | Deep ensemble |
+|---|---|---|---|---|
+| clean | 0.9927 | 0.9927 | 0.9927 | 0.9936 |
+| stain1 | 0.9763 | 0.9763 | 0.9754 | 0.9752 |
+| stain2 | 0.7524 | 0.7524 | 0.7539 | 0.6840 |
+| stain3 | 0.4364 | 0.4364 | 0.4358 | 0.4072 |
+| stain4 | 0.2607 | 0.2607 | 0.2605 | 0.2455 |
+| stain5 | 0.2014 | 0.2014 | 0.2014 | 0.1926 |
+| blur1 | 0.9860 | 0.9860 | 0.9860 | 0.9863 |
+| blur2 | 0.9398 | 0.9398 | 0.9395 | 0.9418 |
+| blur3 | 0.8503 | 0.8503 | 0.8503 | 0.8585 |
+| blur4 | 0.6977 | 0.6977 | 0.6998 | 0.6524 |
+| blur5 | 0.5989 | 0.5989 | 0.6004 | 0.5063 |
+| noise1 | 0.9828 | 0.9828 | 0.9830 | 0.9906 |
+| noise2 | 0.9237 | 0.9237 | 0.9231 | 0.9588 |
+| noise3 | 0.6106 | 0.6106 | 0.6115 | 0.7729 |
+| noise4 | 0.5288 | 0.5288 | 0.5285 | 0.5519 |
+| noise5 | 0.4382 | 0.4382 | 0.4396 | 0.4665 |
+
 ### Under distribution shift (deep ensemble)
 
 | Shift | Severity | Accuracy | ECE | Mean entropy |
@@ -61,7 +98,79 @@ Evaluated on the official BloodMNIST test split (3,421 images). **Pending.** Fil
 | Defocus blur | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
 | Sensor noise | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
 
+## Under shift: ECE
+
+| Condition | Softmax | Temperature scaling | MC dropout | Deep ensemble |
+|---|---|---|---|---|
+| clean | 0.0047 | 0.0032 | 0.0037 | 0.0034 |
+| stain1 | 0.0081 | 0.0062 | 0.0082 | 0.0187 |
+| stain2 | 0.1770 | 0.1669 | 0.1704 | 0.2034 |
+| stain3 | 0.4989 | 0.4891 | 0.4934 | 0.4894 |
+| stain4 | 0.7020 | 0.6962 | 0.6987 | 0.6990 |
+| stain5 | 0.7832 | 0.7804 | 0.7815 | 0.7847 |
+| blur1 | 0.0073 | 0.0054 | 0.0060 | 0.0056 |
+| blur2 | 0.0342 | 0.0291 | 0.0328 | 0.0132 |
+| blur3 | 0.0733 | 0.0576 | 0.0702 | 0.0217 |
+| blur4 | 0.1385 | 0.1118 | 0.1309 | 0.0612 |
+| blur5 | 0.1313 | 0.0888 | 0.1273 | 0.1104 |
+| noise1 | 0.0075 | 0.0060 | 0.0058 | 0.0077 |
+| noise2 | 0.0392 | 0.0317 | 0.0365 | 0.0226 |
+| noise3 | 0.2564 | 0.2414 | 0.2488 | 0.0789 |
+| noise4 | 0.3562 | 0.3376 | 0.3435 | 0.2167 |
+| noise5 | 0.4159 | 0.3959 | 0.3940 | 0.3018 |
+
+## Under shift: Accuracy
+
+| Condition | Softmax | Temperature scaling | MC dropout | Deep ensemble |
+|---|---|---|---|---|
+| clean | 0.9927 | 0.9927 | 0.9927 | 0.9936 |
+| stain1 | 0.9763 | 0.9763 | 0.9754 | 0.9752 |
+| stain2 | 0.7524 | 0.7524 | 0.7539 | 0.6840 |
+| stain3 | 0.4364 | 0.4364 | 0.4358 | 0.4072 |
+| stain4 | 0.2607 | 0.2607 | 0.2605 | 0.2455 |
+| stain5 | 0.2014 | 0.2014 | 0.2014 | 0.1926 |
+| blur1 | 0.9860 | 0.9860 | 0.9860 | 0.9863 |
+| blur2 | 0.9398 | 0.9398 | 0.9395 | 0.9418 |
+| blur3 | 0.8503 | 0.8503 | 0.8503 | 0.8585 |
+| blur4 | 0.6977 | 0.6977 | 0.6998 | 0.6524 |
+| blur5 | 0.5989 | 0.5989 | 0.6004 | 0.5063 |
+| noise1 | 0.9828 | 0.9828 | 0.9830 | 0.9906 |
+| noise2 | 0.9237 | 0.9237 | 0.9231 | 0.9588 |
+| noise3 | 0.6106 | 0.6106 | 0.6115 | 0.7729 |
+| noise4 | 0.5288 | 0.5288 | 0.5285 | 0.5519 |
+| noise5 | 0.4382 | 0.4382 | 0.4396 | 0.4665 |
+
+
+## Under shift: Mean entropy (uncertainty)
+
+| Condition | Softmax | Temperature scaling | MC dropout | Deep ensemble |
+|---|---|---|---|---|
+| clean | 0.0152 | 0.0201 | 0.0161 | 0.0305 |
+| stain1 | 0.0459 | 0.0580 | 0.0488 | 0.1229 |
+| stain2 | 0.1811 | 0.2126 | 0.1943 | 0.2937 |
+| stain3 | 0.1677 | 0.1962 | 0.1814 | 0.2552 |
+| stain4 | 0.0965 | 0.1143 | 0.1051 | 0.1414 |
+| stain5 | 0.0415 | 0.0507 | 0.0460 | 0.0653 |
+| blur1 | 0.0233 | 0.0298 | 0.0250 | 0.0521 |
+| blur2 | 0.0739 | 0.0931 | 0.0788 | 0.1699 |
+| blur3 | 0.2265 | 0.2823 | 0.2387 | 0.4734 |
+| blur4 | 0.5004 | 0.6034 | 0.5175 | 0.8713 |
+| blur5 | 0.8325 | 0.9642 | 0.8495 | 1.1624 |
+| noise1 | 0.0394 | 0.0500 | 0.0421 | 0.0526 |
+| noise2 | 0.1130 | 0.1383 | 0.1202 | 0.1784 |
+| noise3 | 0.3283 | 0.3686 | 0.3447 | 0.5162 |
+| noise4 | 0.3025 | 0.3504 | 0.3349 | 0.5811 |
+| noise5 | 0.3572 | 0.4066 | 0.4050 | 0.5494 |
+
 Accuracy is expected to fall as severity rises. The test is whether uncertainty rises with it, and whether calibration holds.
+
+Results can be viewd in: 
+
+![Reliability diagrams](figures/reliability_224px.png)
+![Risk–coverage curves](figures/risk_coverage_224px.png)
+![Accuracy and ECE under shift](figures/shift_224px.png)
+![Grad-CAM with sanity check](figures/gradcam_224px.png)
+
 
 ## Data
 
