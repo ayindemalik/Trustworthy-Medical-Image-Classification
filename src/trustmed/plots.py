@@ -72,7 +72,7 @@ def shift_examples(clean, shifted, filename):
         axes[r, 0].set_ylabel(kind)
     _save(fig, filename)
 
-## Added at stage 5.1
+## Added at stage 5.1 part -2
 
 def reliability(panels, filename):
     """One panel per method. Bars: accuracy per confidence group. Dashed line: perfectly honest confidence.
@@ -132,5 +132,31 @@ def shift(results, filename):
                 ax.set_ylabel(label)
     handles, names = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, names, loc="upper center", ncol=len(methods), bbox_to_anchor=(0.5, 1.03))
+    fig.tight_layout()
+    _save(fig, filename)
+
+## at 6.1 -- part 3 
+def _overlay(ax, image, cam):
+    """Grey copy of the cell, with the heatmap painted on top in one colour."""
+    ax.imshow(image.mean(0).numpy(), cmap="gray", vmin=0, vmax=1)
+    heat = np.zeros((*cam.shape, 4))
+    heat[..., :3] = to_rgb(HEAT)
+    heat[..., 3] = 0.75 * cam.numpy()   # stronger evidence = less see-through
+    ax.imshow(heat)
+
+
+def gradcam(images, cams, cams_random, titles, filename):
+    """Row 1: the cell. Row 2: Grad-CAM of the trained model. Row 3: Grad-CAM of the same network with random weights."""
+    n = len(images)
+    fig, axes = plt.subplots(3, n, figsize=(n * 1.5 + 1, 5.4), squeeze=False)
+    for i in range(n):
+        axes[0, i].imshow(images[i].permute(1, 2, 0).numpy())
+        axes[0, i].set_title(titles[i], fontsize=8)
+        _overlay(axes[1, i], images[i], cams[i])
+        _overlay(axes[2, i], images[i], cams_random[i])
+        for ax in axes[:, i]:
+            _bare(ax)
+    for ax, label in zip(axes[:, 0], ["Cell", "Grad-CAM\ntrained", "Grad-CAM\nrandom weights"]):
+        ax.set_ylabel(label, fontsize=9)
     fig.tight_layout()
     _save(fig, filename)
