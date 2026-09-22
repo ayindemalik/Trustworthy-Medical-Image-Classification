@@ -7,7 +7,7 @@
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green)
 
-**Status:** 🚧 In active development. Every figure in this README comes from a committed run in `results/`. Until a run exists, the value reads _pending_.
+<!-- **Status:** 🚧 In active development. Every figure in this README comes from a committed run in `results/`. Until a run exists, the value reads _pending_. -->
 
 🔗 **Live demo:** coming soon
 
@@ -44,11 +44,11 @@ Trained on a Colab T4 GPU at 224 px. Temperature T = 1.134. Grad-CAM sanity chec
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Accuracy | _pending_ | Single ResNet-18 |
-| Macro-F1 | _pending_ | Weights all eight classes equally, so rare classes count |
-| ECE (before → after temperature scaling) | _pending_ | 15 equal-width bins; lower is better |
-| Accuracy at 90% coverage | _pending_ | Most uncertain 10% referred to an expert |
-| AURC | _pending_ | Area under the risk–coverage curve; lower is better |
+| Accuracy | _0.9936_ | Single ResNet-18 |
+| Macro-F1 | _0.9948_ | Weights all eight classes equally, so rare classes count |
+| ECE (before → after temperature scaling) | _0.0047_ | 15 equal-width bins; lower is better |
+| Accuracy at 90% coverage | _0.9990_ | Most uncertain 10% referred to an expert |
+| AURC | _0.0013_ | Area under the risk–coverage curve; lower is better |
 
 ## Methods on the clean test set
 
@@ -59,14 +59,14 @@ Trained on a Colab T4 GPU at 224 px. Temperature T = 1.134. Grad-CAM sanity chec
 | MC dropout | 0.9927 | 0.9940 | 0.0037 | 0.0325 | 0.0126 | 0.0013 | 0.9990 | 0.9165 |
 | Deep ensemble | 0.9936 | 0.9948 | 0.0034 | 0.0312 | 0.0121 | 0.0013 | 0.9987 | 0.8985 |
 
-### Uncertainty methods compared
+<!-- ### Uncertainty methods compared
 
 | Method | Accuracy | ECE | NLL | AURC | Extra cost |
 |--------|----------|-----|-----|------|------------|
 | Softmax (baseline) | _pending_ | _pending_ | _pending_ | _pending_ | none |
 | + Temperature scaling | _pending_ | _pending_ | _pending_ | _pending_ | one parameter |
 | MC dropout (30 passes, head only) | _pending_ | _pending_ | _pending_ | _pending_ | last layer run 30× |
-| Deep ensemble (5 models) | _pending_ | _pending_ | _pending_ | _pending_ | 5× training and inference |
+| Deep ensemble (5 models) | _pending_ | _pending_ | _pending_ | _pending_ | 5× training and inference | -->
 
 # Under shift: Accuracy
 
@@ -89,14 +89,14 @@ Trained on a Colab T4 GPU at 224 px. Temperature T = 1.134. Grad-CAM sanity chec
 | noise4 | 0.5288 | 0.5288 | 0.5285 | 0.5519 |
 | noise5 | 0.4382 | 0.4382 | 0.4396 | 0.4665 |
 
-### Under distribution shift (deep ensemble)
+<!--### Under distribution shift (deep ensemble)
 
-| Shift | Severity | Accuracy | ECE | Mean entropy |
+ | Shift | Severity | Accuracy | ECE | Mean entropy |
 |-------|----------|----------|-----|--------------|
 | None | – | _pending_ | _pending_ | _pending_ |
 | Stain (hue / saturation) | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
 | Defocus blur | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
-| Sensor noise | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ |
+| Sensor noise | 1 / 3 / 5 | _pending_ | _pending_ | _pending_ | -->
 
 ## Under shift: ECE
 
